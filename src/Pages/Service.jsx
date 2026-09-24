@@ -40,7 +40,7 @@ const Service = ({
     <div className="max-w-7xl mx-auto px-4 py-10 min-h-screen font-sans bg-black text-neutral-100">
       
       {/* HEADER BANNER */}
-      <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-8 md:p-12 mb-10 text-white shadow-2xl relative overflow-hidden backdrop-blur-md">
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-8 md:p-12 mb-8 text-white shadow-2xl relative overflow-hidden backdrop-blur-md">
         <div className="relative z-10 max-w-2xl">
           <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
             Design Marketplace
@@ -79,13 +79,13 @@ const Service = ({
 
       {/* LISTINGS GRID */}
       {filteredServices.length === 0 ? (
-        <div className="text-center py-20 bg-neutral-900/40 rounded-3xl border border-dashed border-neutral-800">
+        <div className="text-center py-20 bg-neutral-900/40 rounded-3xl border border-dashed border-neutral-800 mb-12">
           <p className="text-neutral-500 text-xs font-bold">
             No items available under this category.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {filteredServices.map((service, index) => {
             const isInCart = cartItems.some((c) => c.id === service.id);
             const isFav = favoriteItems.some((f) => f.id === service.id);
@@ -180,6 +180,27 @@ const Service = ({
           })}
         </div>
       )}
+
+      {/* MOBILE APP DOWNLOAD BANNER (PLACED AT THE BOTTOM BEFORE FOOTER) */}
+      <div className="bg-gradient-to-r from-emerald-950/60 via-neutral-900 to-neutral-900 border border-emerald-500/30 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl mt-12">
+        <div className="space-y-1 text-center md:text-left">
+          <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Android App Available
+          </span>
+          <h3 className="text-lg md:text-xl font-black text-white mt-2">Get the OrderMyGraphics App</h3>
+          <p className="text-xs text-neutral-400 max-w-xl">
+            Download our official Android APK for a faster mobile experience, instant order updates, and direct chats.
+          </p>
+        </div>
+        <a 
+          href="/app.apk" 
+          download
+          className="bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 cursor-pointer"
+        >
+          <span>📱</span> Download APK
+        </a>
+      </div>
+
     </div>
   );
 };

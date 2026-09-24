@@ -6,6 +6,7 @@ import { auth, db } from './firebase';
 
 import Nav from './Component.jsx/Nav';
 import Abt from './Component.jsx/Abt';
+import Footer from './Component.jsx/Footer'; // Make sure your footer file is named Footer.jsx inside Component.jsx/
 import Home from './Pages/Home';
 import Service from './Pages/Service';
 import Signin from './Pages/Signin';
@@ -54,7 +55,13 @@ const MainContent = ({
   handleRejectTransaction, setCart, handleBuyerCheckout, unreadCount 
 }) => {
   const location = useLocation();
-  const isAuthPage = ['/signin', '/signup', '/forgot-password'].includes(location.pathname.toLowerCase());
+  const currentPath = location.pathname.toLowerCase();
+
+  const isAuthPage = ['/signin', '/signup', '/forgot-password'].includes(currentPath);
+  
+  // Pages where the footer should be hidden
+  const hideFooterPages = ['/chat', '/admin-chat', '/payment', '/paymentpage'];
+  const shouldHideFooter = isAuthPage || hideFooterPages.includes(currentPath);
 
   return (
     <div className="w-screen min-h-screen flex flex-col bg-black font-sans">
@@ -143,6 +150,13 @@ const MainContent = ({
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
       </main>
+
+      {/* Footer automatically hides on chat, payment, and auth pages */}
+      {!shouldHideFooter && (
+        <div className="shrink-0">
+          <Footer />
+        </div>
+      )}
     </div>
   );
 };
@@ -220,7 +234,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Real-time unread message counter listener
   useEffect(() => {
     if (!user) {
       setUnreadCount(0);
@@ -229,10 +242,8 @@ function App() {
 
     let q;
     if (user.isSeller) {
-      // Tracks chats where admin has unread flags
       q = query(collection(db, 'chats'), where('adminHasUnread', '==', true));
     } else {
-      // Tracks chat for the current buyer if they have unread flags
       q = query(collection(db, 'chats'), where('buyerUid', '==', user.uid), where('userHasUnread', '==', true));
     }
 
@@ -314,7 +325,7 @@ function App() {
     await setDoc(doc(db, "chats", chatId), {
       chatId, buyerEmail: user.email, buyerUid: user.uid, sellerEmail: SELLER_EMAIL,
       lastMessage: `Pending Order Ref: ${orderIdsText}`, lastUpdated: now,
-      adminHasUnread: true // Triggers the admin's badge counter
+      adminHasUnread: true 
     }, { merge: true });
 
     await addDoc(collection(db, `chats/${chatId}/messages`), {
@@ -333,7 +344,7 @@ function App() {
     
     const chatId = `chat_${transaction.buyerUid}`;
     await updateDoc(doc(db, "chats", chatId), {
-      userHasUnread: true // Triggers the specific buyer's badge counter
+      userHasUnread: true 
     }).catch(() => {});
 
     await addDoc(collection(db, `chats/${chatId}/messages`), {

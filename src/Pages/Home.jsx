@@ -4,67 +4,65 @@ import { Link, useNavigate } from 'react-router-dom';
 const Home = ({ user, listings = [] }) => {
   const navigate = useNavigate();
 
-  // Fallback items grouped by category in case your DB listings are empty
   const defaultCategoryShowcase = [
     {
       id: 'def-1',
       title: 'Minimalist Photo Frame Mockup',
       price: 25000,
-      image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80', // Developer/Designer at computer workspace
       category: 'Frames'
     },
     {
       id: 'def-2',
       title: 'Modern Brand Identity Suite',
       price: 85000,
-      image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1534972195531-d756b9cfa9f2?auto=format&fit=crop&w=800&q=80', // Man coding / working with code on screen
       category: 'Logos & Branding'
     },
     {
       id: 'def-3',
       title: 'Creative Event Poster Design',
       price: 30000,
-      image: 'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80', // Code / programming screen background
       category: 'Flyers & Posters'
     },
     {
       id: 'def-4',
       title: 'Full-Stack React Landing Page',
       price: 150000,
-      image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80', // Laptop with code lines
       category: 'Web Design'
     },
     {
       id: 'def-5',
       title: 'Product Packaging Mockup Set',
       price: 55000,
-      image: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80', // Workspace setup with laptop
       category: 'Project'
     },
     {
       id: 'def-6',
       title: 'Outdoor Vinyl Billboard Banner',
       price: 45000,
-      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80', // Team collaboration workspace
       category: 'Banners & Signage'
     },
     {
       id: 'def-7',
       title: 'Luxury Gold Foil Business Card',
       price: 18000,
-      image: 'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80', // Professional working at a desk
       category: 'Business Cards'
     },
     {
       id: 'def-8',
       title: 'Custom Digital Canvas Artwork',
       price: 35000,
-      image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80', // Design workspace
       category: 'Custom Artwork'
     }
   ];
 
-  // DYNAMICALLY RE-EVALUATES 1 ITEM PER CATEGORY WHENEVER `listings` UPDATES
   const categoryShowcase = useMemo(() => {
     if (!listings || listings.length === 0) {
       return defaultCategoryShowcase;
@@ -72,11 +70,8 @@ const Home = ({ user, listings = [] }) => {
 
     const uniqueCategoriesMap = new Map();
 
-    // Iterate through listings (newest items usually come first or get updated here)
     listings.forEach((item) => {
       const catKey = item.category ? item.category.trim() : 'Uncategorized';
-      
-      // If we haven't added an item for this category yet, pick this newly joined item
       if (!uniqueCategoriesMap.has(catKey)) {
         uniqueCategoriesMap.set(catKey, item);
       }
@@ -84,7 +79,6 @@ const Home = ({ user, listings = [] }) => {
 
     const categorySelectedListings = Array.from(uniqueCategoriesMap.values());
 
-    // Fill in missing categories with fallback defaults if fewer than 3 categories are posted
     if (categorySelectedListings.length < 3) {
       defaultCategoryShowcase.forEach((defaultItem) => {
         if (!uniqueCategoriesMap.has(defaultItem.category)) {
@@ -98,14 +92,12 @@ const Home = ({ user, listings = [] }) => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Safety check: bound the index to the array length if a item is removed or updated
   useEffect(() => {
     if (currentIndex >= categoryShowcase.length) {
       setCurrentIndex(0);
     }
   }, [categoryShowcase.length, currentIndex]);
 
-  // Auto-slide transition every 3.5 seconds
   useEffect(() => {
     if (categoryShowcase.length === 0) return;
 
@@ -117,11 +109,8 @@ const Home = ({ user, listings = [] }) => {
   }, [categoryShowcase.length]);
 
   const currentItem = categoryShowcase[currentIndex] || defaultCategoryShowcase[0];
-
-  // Up to 6 real-time items from database state for the lower grid section
   const displayedGraphics = listings.slice(0, 6);
 
-  // Helper to format price values correctly
   const formatPrice = (val) => {
     if (!val) return '0';
     if (typeof val === 'string' && val.includes('₦')) return val.replace('₦', '');
@@ -135,13 +124,11 @@ const Home = ({ user, listings = [] }) => {
       {/* 1. HERO SECTION WITH AUTOMATED CATEGORY CAROUSEL */}
       <section className="relative overflow-hidden bg-gradient-to-br from-amber-600 via-orange-600 to-amber-800 py-20 lg:py-28 text-white">
         
-        {/* Animated Background Glowing Orbs */}
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-amber-400/30 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-orange-900/40 rounded-full blur-3xl animate-bounce duration-1000"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
           
-          {/* Left Hero Content */}
           <div className="space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 bg-black/30 backdrop-blur-md border border-amber-300/30 text-amber-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -180,6 +167,14 @@ const Home = ({ user, listings = [] }) => {
               >
                 Explore Offers
               </a>
+
+              <a 
+                href="/app.apk"
+                download
+                className="bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold px-6 py-4 rounded-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95 text-center flex items-center justify-center gap-2"
+              >
+                <span>📱</span> Download App (APK)
+              </a>
             </div>
 
             <p className="text-xs text-amber-200/80 pt-2">
@@ -193,23 +188,20 @@ const Home = ({ user, listings = [] }) => {
               <div className="relative h-80 sm:h-96 overflow-hidden">
                 <img 
                   key={currentItem.id || currentItem.image}
-                  src={currentItem.image || currentItem.imageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'} 
+                  src={currentItem.image || currentItem.imageUrl || 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80'} 
                   alt={currentItem.title} 
                   className="w-full h-full object-cover transition-all duration-700 ease-in-out transform scale-100 animate-fadeIn"
                 />
                 
-                {/* Category Badge */}
                 <span className="absolute top-4 left-4 bg-orange-500 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-lg uppercase tracking-wider">
                   📂 {currentItem.category || 'Category Showcase'}
                 </span>
 
-                {/* Counter Badge */}
                 <span className="absolute bottom-4 right-4 bg-black/70 text-amber-300 font-bold text-xs px-3 py-1 rounded-md backdrop-blur-md border border-white/10">
                   {currentIndex + 1} / {categoryShowcase.length} Categories
                 </span>
               </div>
 
-              {/* Title & Price Bar */}
               <div className="p-6 bg-neutral-900 flex justify-between items-center border-t border-neutral-800">
                 <div className="max-w-[70%]">
                   <h3 className="font-bold text-white text-lg truncate">{currentItem.title}</h3>
@@ -221,7 +213,6 @@ const Home = ({ user, listings = [] }) => {
               </div>
             </div>
 
-            {/* Slide Navigation Progress Indicators */}
             <div className="flex justify-center gap-1.5 mt-4">
               {categoryShowcase.map((_, idx) => (
                 <button
@@ -235,8 +226,6 @@ const Home = ({ user, listings = [] }) => {
               ))}
             </div>
 
-            {/* Live Sync Badge */}
-           
           </div>
 
         </div>
@@ -269,7 +258,7 @@ const Home = ({ user, listings = [] }) => {
                 <div>
                   <div className="h-56 overflow-hidden relative">
                     <img 
-                      src={item.image || item.imageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80'} 
+                      src={item.image || item.imageUrl || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80'} 
                       alt={item.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -322,14 +311,10 @@ const Home = ({ user, listings = [] }) => {
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           
           <div className="grid grid-cols-2 gap-4">
+          <img src="/ChatGPT.png" alt="ChatGPT Logo" />
             <img 
-              src="https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&w=600&q=80" 
-              alt="Graphic Tablet Desk" 
-              className="rounded-2xl h-64 w-full object-cover shadow-lg border border-neutral-800 hover:scale-105 transition-transform duration-300"
-            />
-            <img 
-              src="https://images.unsplash.com/photo-1542744094-3a31216914fc?auto=format&fit=crop&w=600&q=80" 
-              alt="Digital Branding Design Studio" 
+              src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80" 
+              alt="Digital Branding and Code Screen Studio" 
               className="rounded-2xl h-64 w-full object-cover shadow-lg border border-neutral-800 mt-8 hover:scale-105 transition-transform duration-300"
             />
           </div>
