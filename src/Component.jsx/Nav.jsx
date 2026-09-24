@@ -54,7 +54,8 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
 
           {/* BRAND LOGO */}
           <div className="flex-shrink-0">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-lg sm:text-xl font-black tracking-tight text-amber-600">
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2.5 text-lg sm:text-xl font-black tracking-tight text-amber-600">
+              <img src="/ChatGPT.png" alt="OrderMygraphics Logo" className="w-8 h-8 object-contain" />
               OrderMygraphics
             </Link>
           </div>
@@ -120,6 +121,14 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       onClick={() => navigate('/admin-chat')}
                       className="flex flex-col items-center gap-1 text-[11px] font-bold hover:text-amber-600 transition-colors cursor-pointer group relative"
                     >
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-2 flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 text-white text-[9px] font-black items-center justify-center shadow-sm">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        </span>
+                      )}
                       <svg className="w-5 h-5 text-neutral-400 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
@@ -150,7 +159,6 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       About Us
                     </button>
 
-                    {/* CHAT SELLER WITH POP-UP BADGE */}
                     <button 
                       type="button"
                       onClick={() => navigate('/chat')}
@@ -316,7 +324,10 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
         <div className={`absolute top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-in-out transform ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           
           <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
-            <span className="text-base font-black text-amber-600">OrderMygraphics</span>
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-base font-black text-amber-600">
+              <img src="/ChatGPT.png" alt="OrderMygraphics Logo" className="w-7 h-7 object-contain" />
+              OrderMygraphics
+            </Link>
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
@@ -352,19 +363,94 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                 <span>🏠</span> Home
               </button>
 
-              {!isAdminSeller && (
-                <button 
-                  type="button"
-                  onClick={() => handleMobileNav('/chat')}
-                  className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-amber-600 transition-all flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-3">💬 Chat Seller</span>
-                  {unreadCount > 0 && (
-                    <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
-                      {unreadCount} New
-                    </span>
-                  )}
-                </button>
+              <button 
+                type="button"
+                onClick={() => handleMobileNav('/services')}
+                className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-red-700 transition-all flex items-center gap-3"
+              >
+                <span>📦</span> Services
+              </button>
+
+              {isAdminSeller ? (
+                <>
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/admin-orders')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-red-700 transition-all flex items-center gap-3"
+                  >
+                    <span>📋</span> Manage Orders
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/AddProperty')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-red-700 transition-all flex items-center gap-3"
+                  >
+                    <span>➕</span> Add Property
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/admin-chat')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-amber-600 transition-all flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-3">💬 Seller Chat</span>
+                    {unreadCount > 0 && (
+                      <span className="bg-emerald-500 text-white text-[11px] px-2 py-0.5 rounded-full font-black">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/about')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-red-700 transition-all flex items-center gap-3"
+                  >
+                    <span>ℹ️</span> About Us
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/chat')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-amber-600 transition-all flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-3">💬 Chat Seller</span>
+                    {unreadCount > 0 && (
+                      <span className="bg-emerald-500 text-white text-[11px] px-2 py-0.5 rounded-full font-black">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/favorites')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-rose-500 transition-all flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-3">❤️ Favorites</span>
+                    {favoriteCount > 0 && (
+                      <span className="bg-rose-500 text-white text-[11px] px-2 py-0.5 rounded-full font-black">
+                        {favoriteCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => handleMobileNav('/cart')}
+                    className="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-red-600 transition-all flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-3">🛒 Cart</span>
+                    {cartCount > 0 && (
+                      <span className="bg-red-600 text-white text-[11px] px-2 py-0.5 rounded-full font-black">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                </>
               )}
             </div>
           </div>

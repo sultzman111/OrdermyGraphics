@@ -11,8 +11,12 @@ const Chat = ({ user }) => {
   const SELLER_EMAIL = 'sultanoyebamiji1@gmail.com';
   const buyerChatId = user?.uid;
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
@@ -46,10 +50,10 @@ const Chat = ({ user }) => {
     const chatId = `chat_${buyerChatId}`;
     const textToSend = input.trim();
     const now = Date.now();
-    const initialStatus = isAdminOnline ? 'delivered' : 'sent';
 
     setInput('');
 
+    // 1. Temporarily display message with a 'pending' status (shows a clock icon 🕒)
     const tempMessage = {
       id: `temp_${now}`,
       senderEmail: user?.email || 'Buyer',
@@ -58,12 +62,15 @@ const Chat = ({ user }) => {
       createdAt: now,
       sentAt: now,
       read: false,
-      status: initialStatus
+      status: 'pending' 
     };
 
     setMessages((prev) => [...prev, tempMessage]);
 
     try {
+      // 2. Push message to Firebase database
+      const initialStatus = isAdminOnline ? 'delivered' : 'sent';
+      
       await addDoc(collection(db, `chats/${chatId}/messages`), {
         senderEmail: user?.email || 'Buyer',
         senderUid: user?.uid,
@@ -81,7 +88,7 @@ const Chat = ({ user }) => {
         unreadCountAdmin: increment(1)
       }, { merge: true });
     } catch (err) {
-      console.error(err);
+      console.error("Error sending message:", err);
     }
   };
 
@@ -96,9 +103,14 @@ const Chat = ({ user }) => {
   };
 
   const renderStatusTicks = (msg) => {
+    const isPending = msg.status === 'pending' || msg.id?.toString().startsWith('temp_');
     const isSeen = msg.read || msg.status === 'read';
     const isDelivered = msg.status === 'delivered' || isAdminOnline;
 
+    // Show clock icon while data is sending/pending
+    if (isPending) {
+      return <span className="text-[10px] text-neutral-400 animate-pulse" title="Sending...">🕒</span>;
+    }
     if (isSeen) {
       return <span className="font-black text-[11px] text-sky-400 tracking-tighter" title="Seen">✓✓✓</span>;
     }
@@ -113,11 +125,11 @@ const Chat = ({ user }) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-neutral-900 overflow-hidden">
-      <div className="w-full max-w-4xl h-full mx-auto flex flex-col bg-neutral-900 border-x border-neutral-800 shadow-2xl relative">
+    <div className="w-full h-[calc(100vh-70px)] md:h-[600px] flex flex-col bg-black font-sans text-neutral-100">
+      <div className="w-full max-w-4xl h-full mx-auto flex flex-col bg-neutral-900 md:border md:border-neutral-800 md:rounded-2xl shadow-2xl overflow-hidden">
         
         {/* Chat Header */}
-        <div className="bg-neutral-950 px-4 py-3 border-b border-neutral-800 flex items-center justify-between shrink-0 z-10">
+        <div className="bg-neutral-950 px-4 py-3 border-b border-neutral-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-xs border border-emerald-500/30">
               S
@@ -135,7 +147,7 @@ const Chat = ({ user }) => {
         </div>
 
         {/* Scrollable Message Thread Body */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-neutral-900 pb-20">
+        <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-neutral-900">
           {messages.map((msg) => {
             const isBuyer = msg.senderEmail?.toLowerCase() !== SELLER_EMAIL.toLowerCase() && msg.senderUid !== 'ADMIN_AUTO_REPLY';
 
@@ -161,24 +173,22 @@ const Chat = ({ user }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Static Pinned Input Form */}
-        <div className="absolute bottom-0 left-0 right-0 bg-neutral-950 border-t border-neutral-800 p-3 z-20">
-          <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message to Support..."
-              className="flex-1 bg-neutral-900 border border-neutral-800 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-neutral-600"
-            />
-            <button
-              type="submit"
-              className="bg-white hover:bg-neutral-200 text-black font-extrabold px-5 py-2.5 rounded-xl text-xs cursor-pointer transition-colors"
-            >
-              Send
-            </button>
-          </form>
-        </div>
+        {/* Bottom Input Form */}
+        <form onSubmit={handleSend} className="bg-neutral-950 border-t border-neutral-800 p-3 shrink-0 flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message to Support..."
+            className="flex-1 bg-neutral-900 border border-neutral-800 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-neutral-600"
+          />
+          <button
+            type="submit"
+            className="bg-white hover:bg-neutral-200 text-black font-extrabold px-5 py-2.5 rounded-xl text-xs cursor-pointer transition-colors"
+          >
+            Send
+          </button>
+        </form>
 
       </div>
     </div>

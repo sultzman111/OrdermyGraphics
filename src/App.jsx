@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { auth, db } from './firebase'; 
 
 import Nav from './Component.jsx/Nav';
@@ -16,7 +16,7 @@ import Cart from './Pages/Cart';
 import AddProperty from './Pages/AddProperty';
 import MyListings from './Pages/MyListings'; 
 import PaymentPage from './Pages/PaymentPage';
-import Chat from './Pages/Chat'; 
+import Chat from './Pages/chat'; 
 import AdminChat from './Pages/AdminChat';
 import AdminOrders from './Pages/AdminOrders';
 
@@ -51,7 +51,7 @@ const MainContent = ({
   user, handleLogout, searchQuery, setSearchQuery, cart, favorites, 
   listings, addToCart, removeFromCart, toggleFavorite, 
   addNewProperty, transactions, handleApproveAndStartChat,
-  handleRejectTransaction, setCart, handleBuyerCheckout 
+  handleRejectTransaction, setCart, handleBuyerCheckout, unreadCount 
 }) => {
   const location = useLocation();
   const isAuthPage = ['/signin', '/signup', '/forgot-password'].includes(location.pathname.toLowerCase());
@@ -67,6 +67,7 @@ const MainContent = ({
             setSearchQuery={setSearchQuery}
             cartCount={cart.length}
             favoriteCount={favorites.length}
+            unreadCount={unreadCount}
           />
         </div>
       )}
@@ -153,6 +154,7 @@ function App() {
   const [listings, setListings] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useUserPresence(user);
 
@@ -217,6 +219,31 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Real-time unread message counter listener
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let q;
+    if (user.isSeller) {
+      // Tracks chats where admin has unread flags
+      q = query(collection(db, 'chats'), where('adminHasUnread', '==', true));
+    } else {
+      // Tracks chat for the current buyer if they have unread flags
+      q = query(collection(db, 'chats'), where('buyerUid', '==', user.uid), where('userHasUnread', '==', true));
+    }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size);
+    }, (error) => {
+      console.error("Error fetching unread count: ", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     const unsubListings = onSnapshot(collection(db, "listings"), (s) => setListings(s.docs.map(d => ({ id: d.id, ...d.data() }))));
@@ -286,7 +313,8 @@ function App() {
 
     await setDoc(doc(db, "chats", chatId), {
       chatId, buyerEmail: user.email, buyerUid: user.uid, sellerEmail: SELLER_EMAIL,
-      lastMessage: `Pending Order Ref: ${orderIdsText}`, lastUpdated: now
+      lastMessage: `Pending Order Ref: ${orderIdsText}`, lastUpdated: now,
+      adminHasUnread: true // Triggers the admin's badge counter
     }, { merge: true });
 
     await addDoc(collection(db, `chats/${chatId}/messages`), {
@@ -302,7 +330,13 @@ function App() {
 
   const handleApproveAndStartChat = async (transaction, deliveryDays = '2 days from now') => {
     await updateDoc(doc(db, "transactions", transaction.id), { status: 'APPROVED', deliveryDays });
-    await addDoc(collection(db, `chats/chat_${transaction.buyerUid}/messages`), {
+    
+    const chatId = `chat_${transaction.buyerUid}`;
+    await updateDoc(doc(db, "chats", chatId), {
+      userHasUnread: true // Triggers the specific buyer's badge counter
+    }).catch(() => {});
+
+    await addDoc(collection(db, `chats/${chatId}/messages`), {
       senderEmail: SELLER_EMAIL,
       text: `✅ Order Ref: ${transaction.uid} (${transaction.title}) APPROVED!\nDelivery: ${deliveryDays}`,
       createdAt: serverTimestamp(), sentAt: Date.now(), status: 'sent'
@@ -327,7 +361,7 @@ function App() {
         toggleFavorite={(item) => setFavorites(p => p.some(i => i.id === item.id) ? p.filter(i => i.id !== item.id) : [...p, item])}
         addNewProperty={addNewProperty} deleteProperty={deleteProperty} transactions={transactions}
         handleApproveAndStartChat={handleApproveAndStartChat} handleRejectTransaction={handleRejectTransaction}
-        setCart={setCart} handleBuyerCheckout={handleBuyerCheckout}
+        setCart={setCart} handleBuyerCheckout={handleBuyerCheckout} unreadCount={unreadCount}
       />
     </Router>
   );

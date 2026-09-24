@@ -44,10 +44,6 @@ const AdminChat = () => {
       );
 
       setSignedUpUsers(customersOnly);
-
-      if (customersOnly.length > 0 && !activeUser) {
-        setActiveUser(customersOnly[0]);
-      }
     });
 
     return () => unsubscribe();
@@ -76,7 +72,6 @@ const AdminChat = () => {
 
     const chatId = `chat_${userChatId}`;
 
-    // Clear admin unread count upon selecting chat
     const chatDocRef = doc(db, 'chats', chatId);
     setDoc(chatDocRef, { unreadCountAdmin: 0 }, { merge: true });
 
@@ -92,31 +87,29 @@ const AdminChat = () => {
       }));
       setMessages(msgs);
 
-      // Auto-reply logic: check if the latest message was sent by customer
       if (msgs.length > 0) {
         const lastMsg = msgs[msgs.length - 1];
         const isFromCustomer = lastMsg.senderEmail !== SELLER_EMAIL && lastMsg.senderUid !== 'ADMIN_AUTO_REPLY';
 
         if (isFromCustomer && !lastMsg.autoReplied) {
           try {
-            // Flag message to prevent multiple replies
             const msgRef = doc(db, `chats/${chatId}/messages`, lastMsg.id);
             await updateDoc(msgRef, { autoReplied: true });
 
-            // Send automated away message after 1s delay
             setTimeout(async () => {
               await addDoc(collection(db, `chats/${chatId}/messages`), {
                 senderEmail: SELLER_EMAIL,
                 senderUid: 'ADMIN_AUTO_REPLY',
                 text: AWAY_MESSAGE,
-                createdAt: Date.now(),
+                createdAt: serverTimestamp(),
                 status: 'sent'
               });
 
               await setDoc(doc(db, 'chats', chatId), {
                 lastMessage: AWAY_MESSAGE,
                 lastUpdated: serverTimestamp(),
-                unreadCountCustomer: increment(1)
+                unreadCountCustomer: increment(1),
+                unreadCountAdmin: 0
               }, { merge: true });
             }, 1000);
           } catch (err) {
@@ -155,17 +148,15 @@ const AdminChat = () => {
         mediaType = currentFile.type.startsWith('image/') ? 'image' : 'video';
       }
 
-      // Add message with time and status
       await addDoc(collection(db, `chats/${chatId}/messages`), {
         senderEmail: SELLER_EMAIL,
         text: textToSend,
         mediaUrl: mediaUrl || null,
         mediaType: mediaType || null,
-        createdAt: Date.now(),
+        createdAt: serverTimestamp(),
         status: 'sent'
       });
 
-      // Update metadata and increment unread message count for Customer
       await setDoc(doc(db, 'chats', chatId), {
         lastMessage: textToSend || (mediaType === 'image' ? '📷 Image' : '🎥 Video'),
         lastUpdated: serverTimestamp(),
@@ -183,21 +174,40 @@ const AdminChat = () => {
   const formatLastSeen = (timestamp) => {
     if (!timestamp) return 'Offline';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Offline';
     return `Last seen ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const formatTime = (timestamp) => {
-    if (!timestamp) return '';
+    if (!timestamp) return 'Just now';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (isNaN(date.getTime())) return 'Just now';
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const sortedCustomers = [...signedUpUsers].sort((a, b) => {
+    const idA = getUserChatId(a);
+    const idB = getUserChatId(b);
+    const metaA = chatMeta[`chat_${idA}`];
+    const metaB = chatMeta[`chat_${idB}`];
+
+    const getTimestamp = (meta) => {
+      if (!meta?.lastUpdated) return 0;
+      if (typeof meta.lastUpdated.toMillis === 'function') return meta.lastUpdated.toMillis();
+      if (meta.lastUpdated.seconds) return meta.lastUpdated.seconds * 1000;
+      if (typeof meta.lastUpdated === 'number') return meta.lastUpdated;
+      return 0;
+    };
+
+    return getTimestamp(metaB) - getTimestamp(metaA);
+  });
+
   return (
-    <div className="max-w-6xl mx-auto my-6 px-4 font-sans bg-black text-neutral-100">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex h-[600px]">
+    <div className="w-full md:max-w-6xl md:mx-auto md:my-6 md:px-4 font-sans bg-black text-neutral-100 flex flex-col h-[calc(100vh-70px)] md:h-auto">
+      <div className="bg-neutral-900 md:border md:border-neutral-800 md:rounded-2xl md:shadow-2xl overflow-hidden flex flex-1 h-full md:h-[600px]">
         
         {/* Customer Sidebar */}
-        <div className="w-1/3 border-r border-neutral-800 bg-neutral-950 flex flex-col">
+        <div className={`w-full md:w-1/3 border-r border-neutral-800 bg-neutral-950 flex flex-col ${activeUser ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-neutral-800 bg-neutral-900">
             <h2 className="text-sm font-black text-white">Registered Customers</h2>
             <p className="text-[10px] text-neutral-400 font-medium">
@@ -206,7 +216,7 @@ const AdminChat = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {signedUpUsers.map((u) => {
+            {sortedCustomers.map((u) => {
               const uChatId = getUserChatId(u);
               const isSelected = getUserChatId(activeUser) === uChatId;
               const unreadCount = chatMeta[`chat_${uChatId}`]?.unreadCountAdmin || 0;
@@ -236,7 +246,6 @@ const AdminChat = () => {
                     </div>
                   </div>
 
-                  {/* Unread Message Badge */}
                   {unreadCount > 0 && (
                     <span className="bg-emerald-500 text-black font-black text-[10px] px-2 py-0.5 rounded-full shrink-0">
                       {unreadCount}
@@ -249,17 +258,25 @@ const AdminChat = () => {
         </div>
 
         {/* Chat Thread */}
-        <div className="flex-1 flex flex-col bg-neutral-900">
+        <div className={`flex-1 flex-col bg-neutral-900 ${activeUser ? 'flex' : 'hidden md:flex'}`}>
           {activeUser ? (
             <>
               <div className="p-4 border-b border-neutral-800 bg-neutral-950 text-white flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-neutral-200">
-                    Chat with: <span className="text-white font-extrabold">{activeUser.fullName || activeUser.email}</span>
-                  </h3>
-                  <p className={`text-[10px] font-semibold ${activeUser.isOnline ? 'text-emerald-400' : 'text-neutral-400'}`}>
-                    {activeUser.isOnline ? '● Online' : formatLastSeen(activeUser.lastSeen)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveUser(null)}
+                    className="md:hidden bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  >
+                    ← Back
+                  </button>
+                  <div>
+                    <h3 className="text-xs font-bold text-neutral-200">
+                      Chat with: <span className="text-white font-extrabold">{activeUser.fullName || activeUser.email}</span>
+                    </h3>
+                    <p className={`text-[10px] font-semibold ${activeUser.isOnline ? 'text-emerald-400' : 'text-neutral-400'}`}>
+                      {activeUser.isOnline ? '● Online' : formatLastSeen(activeUser.lastSeen)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -268,7 +285,7 @@ const AdminChat = () => {
                   const isAdmin = msg.senderEmail === SELLER_EMAIL || msg.senderUid === 'ADMIN_AUTO_REPLY';
                   return (
                     <div key={msg.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-xs sm:max-w-md px-4 py-2.5 rounded-2xl text-xs font-medium ${
+                      <div className={`max-w-[85%] sm:max-w-md px-4 py-2.5 rounded-2xl text-xs font-medium ${
                         isAdmin ? 'bg-neutral-100 text-neutral-950 rounded-br-none shadow-md' : 'bg-neutral-800 border border-neutral-700 text-white rounded-bl-none shadow-md'
                       }`}>
                         <p className={`text-[9px] font-bold mb-0.5 ${isAdmin ? 'text-neutral-600' : 'text-emerald-400'}`}>
@@ -287,7 +304,6 @@ const AdminChat = () => {
 
                         {msg.text && <p className="break-words">{msg.text}</p>}
 
-                        {/* Time & Read Status Indicator */}
                         <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isAdmin ? 'text-neutral-500' : 'text-neutral-400'}`}>
                           <span>{formatTime(msg.createdAt)}</span>
                           {isAdmin && (
@@ -316,7 +332,7 @@ const AdminChat = () => {
                     <input 
                       type="file" 
                       accept="image/*,video/*" 
-                      className="hidden" 
+                      hidden 
                       onChange={(e) => setFile(e.target.files[0])} 
                     />
                   </label>
@@ -339,7 +355,7 @@ const AdminChat = () => {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-xs text-neutral-500">
+            <div className="flex-1 flex items-center justify-center text-xs text-neutral-500 p-6 text-center">
               Select a customer from the sidebar to view chat.
             </div>
           )}
