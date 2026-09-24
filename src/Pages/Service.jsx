@@ -1,117 +1,178 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-// Make sure to accept the correct prop names coming from App.js
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
 const Service = ({ 
   user, 
-  customProperties, 
-  cartItems, 
-  favoriteItems, 
+  customProperties = [], 
+  cartItems = [], 
+  favoriteItems = [], 
   onAddToCart, 
   onRemoveFromCart, 
   onToggleFavorite, 
-  searchQuery 
+  searchQuery = '' 
 }) => {
+  const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // ⚡ CRITICAL: Filter directly from the prop array so it updates instantly when Firebase fires
-  const filteredMarketplace = customProperties.filter((property) => {
-    const titleMatch = property.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const locationMatch = property.location?.toLowerCase().includes(searchQuery.toLowerCase());
-    return titleMatch || locationMatch;
+  const QUICK_CATEGORIES = [
+    { label: 'All Services', key: 'All', icon: '✨' },
+    { label: 'Project', key: 'Project', icon: '📚' },
+    { label: 'Web Design', key: 'Web Design', icon: '💻' },
+    { label: 'Frames', key: 'Frames', icon: '🖼️' },
+    { label: 'Flyers & Posters', key: 'Flyers & Posters', icon: '📄' },
+    { label: 'Logos & Branding', key: 'Logos & Branding', icon: '🎨' },
+    { label: 'Banners & Signage', key: 'Banners & Signage', icon: '🚩' },
+    { label: 'Business Cards', key: 'Business Cards', icon: '📇' },
+    { label: 'Custom Artwork', key: 'Custom Artwork', icon: '✏️' },
+  ];
+
+  const filteredServices = customProperties.filter((item) => {
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    const query = searchQuery.toLowerCase();
+    const titleMatch = item.title?.toLowerCase().includes(query);
+    const descMatch = item.description?.toLowerCase().includes(query);
+    const categoryMatch = item.category?.toLowerCase().includes(query);
+
+    return matchesCategory && (titleMatch || descMatch || categoryMatch);
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 min-h-screen">
-      <div className="mb-10 text-center md:text-left">
-        <h1 className="text-3xl font-black text-gray-950 tracking-tight">Public Property Marketplace</h1>
-        <p className="text-sm text-gray-400 mt-1">Showing all live properties broadcasted across the network.</p>
+    <div className="max-w-7xl mx-auto px-4 py-10 min-h-screen font-sans bg-black text-neutral-100">
+      
+      {/* HEADER BANNER */}
+      <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-8 md:p-12 mb-10 text-white shadow-2xl relative overflow-hidden backdrop-blur-md">
+        <div className="relative z-10 max-w-2xl">
+          <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Design Marketplace
+          </span>
+          <h1 className="text-3xl md:text-5xl font-black mt-3 tracking-tight text-white">
+            Order Services & Projects
+          </h1>
+          <p className="text-xs md:text-sm text-neutral-400 mt-2 font-medium">
+            Select items to add to your cart, submit your order, and chat with us once approved.
+          </p>
+        </div>
       </div>
 
-      {filteredMarketplace.length === 0 ? (
-        <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-          <p className="text-gray-400 text-sm">No properties match your search or no listings are currently live.</p>
+      {/* QUICK CATEGORY PILLS */}
+      <div className="mb-8 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-3 min-w-max">
+          {QUICK_CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                onClick={() => setSelectedCategory(cat.key)}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-neutral-100 text-neutral-950 shadow-lg shadow-white/5 scale-105'
+                    : 'bg-neutral-900/80 text-neutral-400 border border-neutral-800 hover:bg-neutral-800 hover:text-white'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* LISTINGS GRID */}
+      {filteredServices.length === 0 ? (
+        <div className="text-center py-20 bg-neutral-900/40 rounded-3xl border border-dashed border-neutral-800">
+          <p className="text-neutral-500 text-xs font-bold">
+            No items available under this category.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredMarketplace.map((property) => {
-            // Check if this specific item is already added to cart or favorites
-            const isInCart = cartItems.some((c) => c.id === property.id);
-            const isFav = favoriteItems.some((f) => f.id === property.id);
+          {filteredServices.map((service, index) => {
+            const isInCart = cartItems.some((c) => c.id === service.id);
+            const isFav = favoriteItems.some((f) => f.id === service.id);
+            const itemUid = service.uid || `OMG-${index + 1000}`;
 
             return (
-              <div key={property.id} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex flex-col justify-between group">
+              <div 
+                key={service.id || index} 
+                className="bg-neutral-900/80 border border-neutral-800/80 rounded-3xl overflow-hidden shadow-xl hover:border-neutral-700 transition-all flex flex-col justify-between group"
+              >
                 
-                {/* Image & Badge Container */}
-                <div className="relative overflow-hidden">
+                {/* Image Section */}
+                <div className="relative overflow-hidden bg-neutral-950 h-60">
                   <img 
-                    src={property.image} 
-                    alt={property.title} 
-                    className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                    src={service.image || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80'} 
+                    alt={service.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                   />
-                  <span className={`absolute top-4 left-4 text-[10px] font-black tracking-wider px-3 py-1 rounded-full text-white shadow-sm ${
-                    property.isRental ? 'bg-amber-600' : 'bg-emerald-600'
-                  }`}>
-                    {property.tag}
+                  <span className="absolute top-4 left-4 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-emerald-400 border border-emerald-500/20">
+                    {service.category || 'Service'}
                   </span>
-                  
-                  {/* Favorite Toggle Button */}
+
                   {user && (
                     <button 
-                      onClick={() => onToggleFavorite(property)}
-                      className="absolute top-4 right-4 bg-white p-2.5 rounded-full shadow-md text-gray-400 hover:text-rose-600 transition-colors"
+                      onClick={() => onToggleFavorite(service)}
+                      className="absolute top-4 right-4 bg-black/60 backdrop-blur-md p-2.5 rounded-full border border-white/10 shadow-md text-neutral-400 hover:text-rose-500 transition-colors cursor-pointer"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill={isFav ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isFav ? 'text-rose-600' : ''}`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill={isFav ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isFav ? 'text-rose-500' : ''}`}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                       </svg>
                     </button>
                   )}
+
+                  <span className="absolute bottom-3 left-4 text-[9px] font-mono font-extrabold px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-neutral-300 border border-white/10">
+                    UID: {itemUid}
+                  </span>
                 </div>
 
-                {/* Details Meta Block */}
+                {/* Info Section */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-extrabold text-gray-950 text-base line-clamp-1">{property.title}</h3>
-                    <p className="text-xs text-gray-400 font-medium mt-1 flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                      </svg>
-                      {property.location}
-                    </p>
-                    <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                      <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Price</span>
-                      <p className="text-lg font-black text-neutral-950">
-                        ₦{Number(property.basePrice).toLocaleString()}
-                      </p>
+                    <h3 className="font-extrabold text-white text-base tracking-tight">{service.title}</h3>
+                    {service.description && (
+                      <p className="text-xs text-neutral-400 mt-1 line-clamp-2">{service.description}</p>
+                    )}
+                    <div className="mt-4 pt-4 border-t border-neutral-800/80 flex justify-between items-center">
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Starting Price</span>
+                      <p className="text-lg font-black text-white">₦{Number(service.basePrice || 0).toLocaleString()}</p>
                     </div>
                   </div>
 
-                  {/* Cart Action Buttons */}
-                  {user ? (
-                    <div className="mt-6">
-                      {isInCart ? (
-                        <button
-                          onClick={() => onRemoveFromCart(property.id)}
-                          className="w-full bg-rose-50 text-rose-600 font-bold py-3 rounded-xl text-xs hover:bg-rose-100 transition-all"
-                        >
-                          Remove from Cart
-                        </button>
+                  {/* CART ACTIONS */}
+                  <div className="mt-6">
+                    {user ? (
+                      isInCart ? (
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => onRemoveFromCart(service.id)}
+                            className="w-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-bold py-3 rounded-xl text-xs hover:bg-rose-500/20 transition-colors cursor-pointer"
+                          >
+                            Remove from Cart
+                          </button>
+                          <button
+                            onClick={() => navigate('/cart')}
+                            className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs hover:bg-emerald-500 transition-colors cursor-pointer shadow-lg shadow-emerald-900/20"
+                          >
+                            View Cart & Proceed
+                          </button>
+                        </div>
                       ) : (
                         <button
-                          onClick={() => onAddToCart(property)}
-                          className="w-full bg-neutral-950 text-white font-bold py-3 rounded-xl text-xs hover:bg-neutral-900 transition-all shadow-sm"
+                          onClick={() => onAddToCart(service)}
+                          className="w-full bg-white text-black font-extrabold py-3.5 rounded-xl text-xs hover:bg-neutral-200 transition-all shadow-md uppercase tracking-wider cursor-pointer"
                         >
-                          Acquire Asset / Add to Cart
+                          Add to Cart
                         </button>
-                      )}
-                    </div>
-                  ) : (
-                    <Link
-                      to="/signin"
-                      className="mt-6 text-center text-xs text-gray-400 bg-gray-50 py-3 rounded-xl border border-dashed"
-                    >
-                      Please sign in to make an offer on this asset.
-                    </Link>
-                  )}
+                      )
+                    ) : (
+                      <Link
+                        to="/signin"
+                        className="block text-center text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-3.5 rounded-xl hover:bg-emerald-500/20 transition-colors"
+                      >
+                        Sign in to Order
+                      </Link>
+                    )}
+                  </div>
+
                 </div>
 
               </div>

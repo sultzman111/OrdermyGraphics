@@ -1,109 +1,102 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
-const PaymentPage = ({ transactions, user }) => {
-  // Filter transactions to show ONLY history belonging to this logged-in buyer
-  const myHistory = transactions.filter((tx) => tx.buyerEmail === user?.email);
-
-  // Grab the very latest transaction to show as the "Current Order" on top
-  const latestTx = myHistory[0]; 
+const PaymentPage = ({ transactions = [], user }) => {
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 min-h-screen font-sans bg-white">
+    <div className="max-w-5xl mx-auto px-4 py-10 min-h-screen font-sans space-y-6 bg-black text-neutral-100">
       
-      {/* SUCCESS CONFIRMATION HEADER */}
-      <div className="text-center mb-12 bg-blue-50/50 border border-blue-100 rounded-3xl p-8 shadow-sm">
-        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-xl shadow-md animate-bounce">
-          ✓
+      {/* HEADER */}
+      <div className="flex justify-between items-center border-b border-neutral-800 pb-4">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            YOUR HISTORICAL <span className="text-orange-500">LEDGER</span>
+          </h1>
+          <p className="text-xs text-neutral-400 mt-1">Track pending, approved, and rejected orders</p>
         </div>
-        <h1 className="text-2xl font-black text-gray-950 tracking-tight">Request Broadcasted Successfully!</h1>
-        <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
-          Your asset acquisition offer has been routed directly into the seller's secure dashboard stream. 
-        </p>
-        <div className="mt-6 flex justify-center gap-4">
-          <Link to="/services" className="text-xs font-bold bg-white border border-gray-200 px-4 py-2 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm transition-all">
-            ← Browse More Properties
-          </Link>
-        </div>
+        <span className="text-xs font-extrabold text-orange-400 bg-orange-500/10 px-3.5 py-1.5 rounded-full border border-orange-500/20">
+          Total Orders: ({safeTransactions.length})
+        </span>
       </div>
 
-      {/* TWO-COLUMN STATUS INTERFACE */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        {/* LEFT COLUMN: CURRENT BROADCAST ALERT (Takes 1 col) */}
+      {/* ORDERS LIST */}
+      {safeTransactions.length === 0 ? (
+        <div className="p-12 bg-neutral-900/40 rounded-3xl border border-dashed border-neutral-800 text-center space-y-2">
+          <p className="text-sm font-black text-neutral-300">No Historical Records Found</p>
+          <p className="text-xs text-neutral-500">
+            Submit an order from your cart to start seeing your history ledger here.
+          </p>
+        </div>
+      ) : (
         <div className="space-y-4">
-          <h2 className="text-sm font-black text-gray-400 uppercase tracking-wider">Current Pipeline</h2>
-          
-          {latestTx ? (
-            <div className="border border-gray-200 rounded-2xl p-5 bg-white shadow-sm space-y-3">
-              <span className="text-[9px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">LATEST BROADCAST</span>
-              <h3 className="font-extrabold text-gray-900 text-sm line-clamp-2">{latestTx.title}</h3>
-              <p className="text-lg font-black text-gray-950">₦{Number(latestTx.price).toLocaleString()}</p>
-              
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-400">Live Status:</span>
-                {latestTx.status === 'PENDING' && <span className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full animate-pulse">Pending ⏳</span>}
-                {latestTx.status === 'SUCCESSFUL' && <span className="text-xs font-bold px-2.5 py-1 bg-emerald-600 text-white rounded-full shadow-md">Successful ✅</span>}
-                {latestTx.status === 'UNSUCCESSFUL' && <span className="text-xs font-bold px-2.5 py-1 bg-rose-600 text-white rounded-full shadow-md">Unsuccessful ❌</span>}
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400 italic">No active requests floating in network pipelines.</p>
-          )}
-        </div>
+          {safeTransactions.map((tx, index) => {
+            if (!tx) return null;
 
-        {/* RIGHT COLUMN: PERMANENT PURCHASE HISTORY LEDGER (Takes 2 cols) */}
-        <div className="md:col-span-2 space-y-4">
-          <h2 className="text-sm font-black text-gray-400 uppercase tracking-wider">Your Historical Ledger ({myHistory.length})</h2>
+            const docId = tx.id || `tx-${index}`;
+            const refCode = tx.uid || (typeof tx.id === 'string' ? tx.id.slice(0, 8) : `ORD-${index}`);
+            const status = String(tx.status || 'PENDING').toUpperCase();
+            
+            const isAccepted = status === 'APPROVED' || status === 'ACCEPTED';
+            const isRejected = status === 'REJECTED' || status === 'DECLINED';
+            const isPending = !isAccepted && !isRejected;
 
-          {myHistory.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
-              <p className="text-gray-400 text-xs">No recorded logs found under account: {user?.email}</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1">
-              {myHistory.map((tx) => (
-                <div 
-                  key={tx.txId} 
-                  className={`p-4 border rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4 transition-all duration-300 ${
-                    tx.status === 'SUCCESSFUL' ? 'border-emerald-200 bg-emerald-50/5 shadow-emerald-50/20' : 
-                    tx.status === 'UNSUCCESSFUL' ? 'border-rose-200 bg-rose-50/5 shadow-rose-50/20' : 
-                    'border-gray-100'
-                  }`}
-                >
-                  <div className="space-y-1 w-2/3">
-                    <h4 className="font-extrabold text-gray-900 text-xs line-clamp-1">{tx.title}</h4>
-                    <p className="text-[10px] text-gray-400 truncate">Seller ID: {tx.sellerId}</p>
-                    <span className="text-[9px] font-mono text-gray-300 block">ID: {tx.txId}</span>
-                  </div>
+            const formattedPrice = Number(tx.price || 0).toLocaleString();
 
-                  <div className="text-right space-y-2 flex flex-col items-end flex-shrink-0">
-                    <p className="text-sm font-black text-gray-950">₦{Number(tx.price).toLocaleString()}</p>
-                    
-                    {/* SELLER ACTION RESPONSE BADGES */}
-                    {tx.status === 'PENDING' && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full animate-pulse">
-                        Awaiting Review ⏳
+            return (
+              <div 
+                key={docId} 
+                className="p-5 rounded-2xl border border-neutral-800/80 bg-neutral-900/80 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl hover:border-orange-500/40 transition-all"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-orange-400">
+                      Ref: {refCode}
+                    </span>
+
+                    {/* STATUS BADGES */}
+                    {isAccepted && (
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        ACCEPTED
                       </span>
                     )}
-                    {tx.status === 'SUCCESSFUL' && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 bg-emerald-600 text-white rounded-full shadow-sm">
-                        Successful ✅
+
+                    {isRejected && (
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        REJECTED
                       </span>
                     )}
-                    {tx.status === 'UNSUCCESSFUL' && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 bg-rose-600 text-white rounded-full shadow-sm">
-                        Unsuccessful ❌
+
+                    {isPending && (
+                      <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                        AWAITING REVIEW
                       </span>
                     )}
                   </div>
+
+                  <h3 className="text-sm font-extrabold text-white">{tx.title || 'Graphic Request'}</h3>
+                  <p className="text-xs text-neutral-400">Buyer: {tx.buyerEmail || tx.buyerName || 'Guest User'}</p>
+
+                  {isAccepted && tx.deliveryDays && (
+                    <p className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-fit border border-emerald-500/20 mt-1">
+                      🚚 Delivery: {tx.deliveryDays}
+                    </p>
+                  )}
+
+                  {isRejected && (
+                    <p className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-lg w-fit border border-rose-500/20 mt-1">
+                      ❌ Reason: {tx.rejectionReason || 'Order was declined'}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-      </div>
+                <div className="text-right text-sm font-black text-orange-400">
+                  ₦{formattedPrice}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

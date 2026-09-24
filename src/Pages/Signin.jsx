@@ -1,71 +1,58 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; // Connects directly to your Firebase configuration file
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
-const Signin = ({ onLogin }) => {
-  const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState('');
+const Signin = () => {
+  const [identifier, setIdentifier] = useState(''); // Holds either email or phone number
   const [password, setPassword] = useState('');
-  
-  // --- ROLE SWITCH STATE ---
-  const [role, setRole] = useState('buyer'); // Defaults to buyer access
-
-  // States for Security, Loading, & UX
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(''); 
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSignin = async (e) => {
     e.preventDefault();
-    setError(''); 
-    loading || setLoading(true);
+    setError('');
+    setLoading(true);
 
     try {
-      console.log("Attempting login for:", { identifier, password, role });
+      const cleanIdentifier = identifier.trim();
+      let targetEmail = cleanIdentifier;
 
-      // Add a small delay to simulate network response time
-      await new Promise((resolve) => setTimeout(resolve, 600)); 
+      // Check if identifier is NOT an email (contains @). If it's a phone number, look up the email in Firestore
+      if (!cleanIdentifier.includes('@')) {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('phoneNumber', '==', cleanIdentifier));
+        const querySnapshot = await getDocs(q);
 
-      // ----------------------------------------------------------------
-      // LIVE FIREBASE AUTHENTICATION 
-      // ----------------------------------------------------------------
-      const userCredential = await signInWithEmailAndPassword(
-        auth, 
-        identifier.trim().toLowerCase(), 
-        password
-      );
-      const firebaseUser = userCredential.user;
-      // ----------------------------------------------------------------
+        if (querySnapshot.empty) {
+          throw new Error('No account found with this phone number.');
+        }
 
-      // Pass the selected account role straight down into your state architecture
-      if (onLogin) {
-        onLogin({
-          firstName: firebaseUser.displayName || "Kareem", 
-          lastName: "Alameen",
-          email: firebaseUser.email,
-          role: role // ⚡ CRITICAL: Maps 'buyer' or 'seller' to activate Route Protection
-        });
+        const userDoc = querySnapshot.docs[0].data();
+        if (!userDoc.email) {
+          throw new Error('Account email configuration missing. Contact support.');
+        }
+
+        targetEmail = userDoc.email;
       }
 
-      // SUCCESS ROUTING: 
-      // If they are a seller, send them to their dashboard list; if buyer, send to marketplace
-      if (role === 'seller') {
-        navigate('/mylistening');
-      } else {
-        navigate('/services');
-      }
+      // Authenticate with Firebase Auth
+      await signInWithEmailAndPassword(auth, targetEmail, password);
 
+      // Navigate to Home
+      navigate('/');
     } catch (err) {
-      console.error("Firebase Signin error context code:", err.code);
       if (
-        err.code === 'auth/user-not-found' || 
-        err.code === 'auth/wrong-password' || 
-        err.code === 'auth/invalid-credential'
+        err.message.includes('auth/invalid-credential') || 
+        err.message.includes('auth/wrong-password') ||
+        err.message.includes('auth/user-not-found')
       ) {
-        setError("Invalid credentials. Account not found or wrong password.");
+        setError('Invalid login details or password.');
       } else {
-        setError(err.message || "Something went wrong.");
+        setError(err.message.replace('Firebase: ', ''));
       }
     } finally {
       setLoading(false);
@@ -73,186 +60,96 @@ const Signin = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex font-sans bg-white">
-      
-      {/* LEFT SIDE: Brand / Blue Accent Section */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 relative overflow-hidden flex-col justify-between p-12 text-white">
-        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+    <div className="min-h-screen w-full flex font-sans bg-neutral-950 justify-center items-center p-4">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden">
         
-        {/* Top: Logo */}
-        <div className="relative z-10 flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
-            <div className="w-4 h-4 bg-blue-600 rounded-sm transform rotate-45"></div>
-          </div>
-          <span className="font-bold text-xl tracking-tight">S-CUBE Inc</span>
-        </div>
-
-        {/* Middle: Brand Copy */}
-        <div className="relative z-10 max-w-md my-auto">
-          <h1 className="text-4xl font-extrabold tracking-tight leading-none mb-4">
-            Simplify your workflow today.
-          </h1>
-          <p className="text-blue-100 text-lg">
-            Join thousands of developers managing their projects seamlessly with our modern infrastructure.
+        {/* Header */}
+        <div className="bg-gradient-to-r from-amber-600 to-orange-600 py-6 px-8 text-center">
+          <h2 className="text-2xl font-black text-white tracking-tight">
+            Welcome Back
+          </h2>
+          <p className="text-amber-100 text-xs mt-1">
+            Sign in with your email or phone number and password
           </p>
-          
-          <div className="mt-8 p-6 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl">
-            <div className="flex gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-white/30"></div>
-              <div className="w-3 h-3 rounded-full bg-white/30"></div>
-              <div className="w-3 h-3 rounded-full bg-white/30"></div>
-            </div>
-            <div className="h-4 bg-white/20 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-white/10 rounded w-1/2"></div>
-          </div>
         </div>
 
-        {/* Bottom: Copyright */}
-        <div className="relative z-10 text-sm text-blue-200">
-          &copy; 2026 S-CUBE Inc. All rights reserved.
-        </div>
-      </div>
-
-      {/* RIGHT SIDE: Clean Sign-In Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-16">
-        <div className="w-full max-w-md">
-          
-          {/* Mobile-only Logo */}
-          <div className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-sm transform rotate-45"></div>
-            </div>
-            <span className="font-bold text-xl tracking-tight text-gray-900">S-CUBE Inc</span>
-          </div>
-
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Welcome back</h2>
-            <p className="text-sm text-gray-500">Please enter your details to sign in to your account.</p>
-          </div>
-
-          {/* Error Banner Notification */}
+        <form onSubmit={handleSignin} className="p-8 space-y-5">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-sm text-red-600">
-              <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-              </svg>
-              <span>{error}</span>
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-xs font-medium">
+              {error}
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* ⚡ NEW: IDENTITY ROLE INTENT SELECTOR */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                Sign In As
-              </label>
-              <div className="grid grid-cols-2 gap-2 bg-gray-50 p-1 border border-gray-200 rounded-xl h-[46px] items-center">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setRole('buyer')}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    role === 'buyer' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-900'
-                  }`}
-                >
-                  Property Buyer
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setRole('seller')}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    role === 'seller' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-900'
-                  }`}
-                >
-                  Asset Seller
-                </button>
-              </div>
-            </div>
+          {/* Email or Phone Number Input */}
+          <div>
+            <label className="block text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
+              Email or Phone Number
+            </label>
+            <input
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-amber-500 outline-none text-white text-sm transition-colors"
+              placeholder="name@example.com or +1234567890"
+              required
+            />
+          </div>
 
-            {/* Email or Phone */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">
-                Phone Number or Email
+          {/* Password Field */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                Password
               </label>
-              <input 
-                type="text" 
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all text-sm" 
-                placeholder="name@example.com" 
-                disabled={loading}
+              <Link to="/forgot-password" className="text-xs text-amber-500 font-bold hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-4 pr-11 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-amber-500 outline-none text-white text-sm transition-colors"
+                placeholder="••••••••"
                 required
               />
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Password
-                </label>
-                <Link to="/forgot-password" className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all text-sm" 
-                  placeholder="••••••••" 
-                  disabled={loading}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-sm font-semibold text-gray-400 hover:text-blue-600 transition-colors cursor-pointer select-none"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold py-3 px-4 rounded-xl shadow-sm transition-all duration-150 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
-            >
-              {loading ? ( 
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition-colors p-1"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.033 10.033 0 013.682-.763c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m-1.748 1.748l-14.14-14.14" />
                   </svg>
-                  Verifying...
-                </>
-              ) : (
-                `Sign In as ${role === 'seller' ? 'Seller' : 'Buyer'}`
-              )}
-            </button>
-          </form>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
 
-          {/* Footer */}
-          <p className="text-center text-sm text-gray-500 mt-8">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3.5 rounded-xl transition-all duration-200 cursor-pointer shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 mt-4"
+          >
+            {loading ? 'Signing In...' : 'Sign In'}
+          </button>
+
+          <p className="text-center text-xs text-neutral-400 pt-2">
             Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors">
+            <Link to="/signup" className="text-amber-500 font-bold hover:underline">
               Sign up
             </Link>
           </p>
-        </div>
+        </form>
       </div>
-
     </div>
   );
 };
