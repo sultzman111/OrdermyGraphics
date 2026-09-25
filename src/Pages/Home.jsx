@@ -167,14 +167,13 @@ const Home = ({ user, listings = [] }) => {
               >
                 Explore Offers
               </a>
-
-              <a 
-                href="/app.apk"
-                download
-                className="bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold px-6 py-3.5 sm:px-6 sm:py-4 rounded-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95 text-center flex items-center justify-center gap-2 text-xs sm:text-base"
-              >
-                <span>📱</span> Download App (APK)
-              </a>
+<a 
+  href="/OrderMyGraphics.apk"
+  download="OrderMyGraphics.apk"
+  className="bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold px-6 py-3.5 sm:px-6 sm:py-4 rounded-xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95 text-center flex items-center justify-center gap-2 text-xs sm:text-base"
+>
+  <span>📱</span> Download App (APK)
+</a>
             </div>
 
             <p className="text-[11px] sm:text-xs text-amber-200/80 pt-1">
