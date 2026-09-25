@@ -48,28 +48,28 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
   };
 
   return (
-    <nav className="bg-white border-b border-neutral-200/80 sticky top-0 z-50 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <nav className="bg-white border-b border-neutral-200/80 sticky top-0 z-50 font-sans w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
 
           {/* BRAND LOGO */}
           <div className="flex-shrink-0">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2.5 text-lg sm:text-xl font-black tracking-tight text-amber-600">
-              <img src="/ChatGPT.png" alt="OrderMygraphics Logo" className="w-8 h-8 object-contain" />
-              OrderMygraphics
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-base sm:text-xl font-black tracking-tight text-amber-600">
+              <img src="/ChatGPT.png" alt="OrderMygraphics Logo" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+              <span className="truncate">OrderMygraphics</span>
             </Link>
           </div>
 
           {/* DESKTOP NAVIGATION */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-6">
             {!user ? (
-              <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-6">
                 <Link to="/" className="text-sm font-bold text-neutral-600 hover:text-red-700 transition-colors">Home</Link>
                 <Link to="/services" className="text-sm font-bold text-neutral-600 hover:text-red-700 transition-colors">Services</Link>
                 <Link to="/about" className="text-sm font-bold text-neutral-600 hover:text-red-700 transition-colors">About Us</Link>
               </div>
             ) : (
-              <div className="flex items-center space-x-7 text-neutral-600">
+              <div className="flex items-center space-x-4 lg:space-x-6 text-neutral-600">
                 <button 
                   type="button"
                   onClick={() => navigate('/')}
@@ -102,7 +102,7 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       <svg className="w-5 h-5 text-neutral-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                       </svg>
-                      Manage Orders
+                      Orders
                     </button>
 
                     <button 
@@ -132,7 +132,7 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       <svg className="w-5 h-5 text-neutral-400 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      Seller Chat
+                      Chat
                     </button>
                   </>
                 ) : (
@@ -156,7 +156,7 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       <svg className="w-5 h-5 text-neutral-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      About Us
+                      About
                     </button>
 
                     <button 
@@ -175,7 +175,7 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                       <svg className="w-5 h-5 text-neutral-400 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      Chat Seller
+                      Chat
                     </button>
 
                     <button 
@@ -216,13 +216,13 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
           </div>
 
           {/* PROFILE & USER DROPDOWN */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-4 relative" ref={dropdownRef}>
+              <div className="flex items-center gap-2 sm:gap-3 relative" ref={dropdownRef}>
                 <button 
                   type="button"
                   onClick={() => navigate('/payment')}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-red-50 hover:border-red-200 text-xs font-bold text-neutral-600 hover:text-red-700 transition-all cursor-pointer"
+                  className="hidden md:flex items-center gap-1 px-2.5 py-2 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-red-50 hover:border-red-200 text-xs font-bold text-neutral-600 hover:text-red-700 transition-all cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -230,7 +230,7 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
                   <span>History</span>
                 </button>
 
-                <span className="hidden lg:inline text-xs font-semibold text-neutral-500">
+                <span className="hidden xl:inline text-xs font-semibold text-neutral-500">
                   Welcome, <strong className="text-neutral-900 font-extrabold">{getFullName()}</strong> 👋
                 </span>
 
@@ -284,10 +284,10 @@ const Nav = ({ user, onLogout, cartCount, favoriteCount, unreadCount = 0 }) => {
               </div>
             ) : (
               <div className="flex items-center gap-2 text-xs font-bold">
-                <Link to="/signin" className="text-neutral-600 hover:text-red-700 px-2.5 py-2 rounded-lg transition-colors whitespace-nowrap">
+                <Link to="/signin" className="text-neutral-600 hover:text-red-700 px-2 py-2 rounded-lg transition-colors whitespace-nowrap">
                   Sign In
                 </Link>
-                <Link to="/signup" className="bg-neutral-900 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl shadow-sm transition-all whitespace-nowrap">
+                <Link to="/signup" className="bg-neutral-900 hover:bg-red-700 text-white px-3 py-2 rounded-xl shadow-sm transition-all whitespace-nowrap">
                   Sign Up
                 </Link>
               </div>
