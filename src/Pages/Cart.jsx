@@ -17,14 +17,11 @@ const Cart = ({
     (sum, item) => sum + Number(item.basePrice || item.price || 0), 0
   );
 
-  // Filter ONLY PENDING orders for current buyer & limit to max 5 items
-  const activePendingTransactions = transactions
-    .filter(tx => 
-      (tx.buyerEmail === user?.email || tx.buyerUid === user?.uid) &&
-      (tx.status || 'PENDING').toUpperCase() === 'PENDING'
-    )
+  // Filter buyer transactions to track PENDING, ACCEPTED, DELIVERED, and REJECTED statuses
+  const buyerTransactions = transactions
+    .filter(tx => (tx.buyerEmail === user?.email || tx.buyerUid === user?.uid))
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-    .slice(0, 5); // Capped at 5 maximum
+    .slice(0, 5); // Capped at 5 maximum for quick overview
 
   const handleCheckoutSubmit = async () => {
     if (cartItems.length === 0) return;
@@ -137,10 +134,10 @@ const Cart = ({
         </div>
       </div>
 
-      {/* PENDING ORDERS (MAX 5) */}
+      {/* RECENT BUYER ORDERS & STATUS TRACKER */}
       <div className="pt-8 border-t border-neutral-800">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-black text-white">Pending Orders ({activePendingTransactions.length}/5)</h2>
+          <h2 className="text-xl font-black text-white">Your Order Status ({buyerTransactions.length})</h2>
           <button 
             onClick={() => navigate('/mylistening')} 
             className="text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
@@ -149,26 +146,48 @@ const Cart = ({
           </button>
         </div>
         
-        {activePendingTransactions.length === 0 ? (
-          <p className="text-xs text-neutral-500 font-medium">No pending orders currently awaiting admin approval.</p>
+        {buyerTransactions.length === 0 ? (
+          <p className="text-xs text-neutral-500 font-medium">No order activity found yet.</p>
         ) : (
           <div className="space-y-3">
-            {activePendingTransactions.map((tx) => (
-              <div key={tx.id} className="p-4 rounded-2xl border border-neutral-800/80 bg-neutral-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-white">
-                      Order Ref: {tx.uid || tx.id.slice(0, 8)}
-                    </span>
-                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                      PENDING
-                    </span>
+            {buyerTransactions.map((tx) => {
+              const status = String(tx.status || 'PENDING').toUpperCase();
+              const isAccepted = status === 'ACCEPTED' || status === 'APPROVED';
+              const isDelivered = status === 'DELIVERED' || status === 'COMPLETED';
+              const isRejected = status === 'REJECTED' || status === 'DECLINED';
+
+              return (
+                <div key={tx.id} className="p-4 rounded-2xl border border-neutral-800/80 bg-neutral-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-white">
+                        Order Ref: {tx.uid || tx.id.slice(0, 8)}
+                      </span>
+                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase ${
+                        isDelivered ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                        isAccepted ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                        isRejected ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                        'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {status}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-neutral-300 mt-1">{tx.title || 'Graphic Design'}</p>
+                    <p className="text-xs text-neutral-400">Total: ₦{Number(tx.price || 0).toLocaleString()}</p>
+
+                    {tx.deliveryDays && isAccepted && (
+                      <p className="text-[11px] font-bold text-amber-300 mt-1">🚚 Estimated Delivery: {tx.deliveryDays}</p>
+                    )}
+                    {isDelivered && (
+                      <p className="text-[11px] font-bold text-emerald-400 mt-1">📦 Order Delivered Successfully!</p>
+                    )}
+                    {isRejected && (
+                      <p className="text-[11px] font-bold text-rose-400 mt-1">❌ Declined: {tx.rejectionReason || 'Order declined.'}</p>
+                    )}
                   </div>
-                  <p className="text-xs font-bold text-neutral-300 mt-1">{tx.title}</p>
-                  <p className="text-xs text-neutral-400">Total: ₦{Number(tx.price || 0).toLocaleString()}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
